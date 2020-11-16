@@ -1,6 +1,6 @@
 Here is the results of a brief research for CTD-squared BeatAML DREAM Challenge ([syn20940518](syn20940518)) 
 
-## Summary Sentence
+## Summary
 
 It was analyzed if the baseline solution could be improved by feature preprocessing using dimensionality reduction algorithms. 
 
