@@ -1,4 +1,4 @@
-Here is the results of a brief research for CTD-squared BeatAML DREAM Challenge ([syn20940518](syn20940518)) 
+Here are the results of a brief research for CTD-squared BeatAML DREAM Challenge ([syn20940518](syn20940518)) 
 
 ## Summary
 
