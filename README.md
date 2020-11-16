@@ -1,33 +1,27 @@
-# BeatAML CTD^2 DREAM Challenge: Example 1
+Here is the results of a brief research for CTD-squared BeatAML DREAM Challenge ([syn20940518](syn20940518)) 
 
-Example implementation of a solution to subchallenge 1 of the BeatAML CTD^2 DREAM challenge. This example uses gene expression to train a RidgeRegression model for each inhibitor to predict AUC.
+##Summary Sentence
 
-## To Train a model
+It was analyzed if the baseline solution could be improved by feature preprocessing using dimensionality reduction algorithms. 
 
-- Run Jupyter with `docker run -p 8888:8888 -v "$PWD:/home/jovyan" jupyter/scipy-notebook`
-  - Stdout will include a URL to open the notebook
-- Go through the steps in `index.ipynb`
-  - The model will be stored in `model/` in two files: `pkl_1.csv` and `pkl_2.csv`
-  - Read more about the model [below](#the_model)
 
-## To Run Your Model on Training Data
+##Introduction
 
-This model can be run on the same data it was trained on, to test whether the Dockerfile works:
+Due to the limited number of data points in training data and an extremely large quantity of independent variables (213 specimen vs 63677 genes only in gene expression table), a problem of decreasing the number of acting features and overfitting prevention seems to be one of the most crucial.  In this light methods of dimensionality reduction could be promising among other feature selection algorithms. They are widely used to effectively squeeze feature space while saving most of the information сontained in the initial data. Along with сommon linear methods (such as PCA - principal component analysis), more sophisticated non-linear methods were introduced, e.g. kernel PCA, MDS, and t-SNE. 
 
-```bash
-SYNAPSE_PROJECT_ID=<...>
-docker build -t docker.synapse.org/$SYNAPSE_PROJECT_ID/sc1_model .
-docker run -v "$PWD/training/:/input/" -v "$PWD/output:/output/" docker.synapse.org/$SYNAPSE_PROJECT_ID/sc1_model 
-```
 
-## Submitting to Synapse DockerHub
+##Methods
 
-```bash
-SYNAPSE_PROJECT_ID=<...>
-docker login docker.synapse.org
-docker build -t docker.synapse.org/$SYNAPSE_PROJECT_ID/sc1_model .
-docker push docker.synapse.org/$SYNAPSE_PROJECT_ID/sc1_model
-```
+First, the number of most variably expressed genes (the genes with the largest variance on the training dataset) was experimentally tuned using leave one out cross-validation and Ridge regression algorithm. It turned out that more accurate tuning of the number of most expressed genes (20000 vs initial 1000) saves more information for subsequent processing.
+Second, a number of dimensionality reduction algorithms were tested: PCA and truncated SVD algorithms as well as their modifications - kernel PCA with the distinct types of kernels (linear, polynomial, RBF, sigmoid, cosine), and other non-linear algorithms (MDS and t-SNE). The resulting dataset was used as input for the Ridge regression algorithm. It was found that applying most of the methods gives an increase both to the default regression metric (negative mean squared error) and metric specific for this subchallenge (averaged Spearman correlation of predictions for each drug).  The best results were obtained while using the kernel PCA algorithm with RBF kernels.
+
+All methods were implemented using Python's Scikit-learn library implementation.
+
+
+##Conclusion
+
+It looks like both linear and kernel PCA can be used for effective dimensionality reduction for gene expression data. The resulting dataset allows easier and faster analysis with the usage of different ML algorithms.  
+
 
 ## The Model
 
@@ -35,20 +29,25 @@ One Ridge Regression model is trained for each inhibitor to predict AUC. The onl
 
 Specifics:
 
-* The 1000 most variable genes are used for training
+* The 20000 most variable genes are used for training
 * The log2(cpm) values are normalized per-specimen
 * The z-score is computed for each gene
-* Ridge Regression is trained using hold-one-out cross-validation to predict AUC
+* Ridge Regression is trained using leave-one-out cross-validation to predict AUC
+
 
 ### On-Disk Representation
 
-The trained model is stored in two "pickles": pkl_1 and pkl_2:
+The trained model is stored in four "pickles":
 
-- pkl_1: has one row per gene included in the model and N+3 columns (N is the number of inhibitors):
-  - gene: Include this gene's expression in the linear fit.
-  - gene_mean: The mean expression in the training data (to compute z-score).
-  - gene_std: The standard deviation of expression in the training data (to compute z-score).
-  - <inhibitor>: The Ridge Regression weight coefficient for this gene for `inhibitor`.
-- pkl_2: one row per inhibitor and two columns:
-  - inhibitor: The inhibitor name.
-  - intercept: The Ridge Regression intercept.
+- selected_genes.pkl: contains the list of 20000 the most expressed genes
+- scaler.pkl: contains fitted scaler model (z-score computation for each gene)
+- pca.pkl: contains fitted parameters of dimensionality reduction algorithm (KernelPCA)
+- regressors.pkl: contains fitted Ridge Regression models for each inhibitor
+
+##References
+
+Bernhard Schoelkopf, Alexander Smola, Klaus-Robert Mueller, Kernel principal component analysis, In Advances in kernel methods, MIT Press, Cambridge, MA, USA 327-352, 1999.
+
+I. Borg, P. Groenen, Modern Multidimensional Scaling: Theory and Applications, Springer Series in Statistics, 1997.
+
+L.J.P. van der Maaten, G.E. Hinton, Visualizing High-Dimensional Data Using t-SNE, Journal of Machine Learning Research 9:2579-2605, 2008.
